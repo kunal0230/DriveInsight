@@ -2,7 +2,7 @@
 
 **DriveInsight** is a premium, smart macOS storage visualizer and analyzer built with Electron, React, and TailwindCSS. It provides deep insights into your disk usage with a modern, glassmorphic "Pro" interface.
 
-![DriveInsight Dashboard](https://github.com/user-attachments/assets/placeholder)
+![DriveInsight Dashboard](assets/dashboard-preview.png)
 
 ## Features
 
