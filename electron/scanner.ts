@@ -186,3 +186,55 @@ export async function scanDirectory(dirPath: string): Promise<ScanResult | null>
         }
     };
 }
+export async function getCommonDirectories(): Promise<FileNode[]> {
+    const home = process.env.HOME || '/';
+    const common = [
+        { name: 'Home', path: home, type: 'directory' },
+        { name: 'Desktop', path: path.join(home, 'Desktop'), type: 'directory' },
+        { name: 'Documents', path: path.join(home, 'Documents'), type: 'directory' },
+        { name: 'Downloads', path: path.join(home, 'Downloads'), type: 'directory' },
+        { name: 'Volumes', path: '/Volumes', type: 'directory' }, // macOS specific
+    ];
+
+    // Filter to only those that exist
+    const results = await Promise.all(common.map(async (dir) => {
+        try {
+            const stats = await fs.stat(dir.path);
+            return stats.isDirectory() ? { ...dir, size: 0, children: [] } as FileNode : null;
+        } catch {
+            return null;
+        }
+    }));
+
+    return results.filter(Boolean) as FileNode[];
+}
+
+export async function listDirectory(dirPath: string): Promise<FileNode[]> {
+    try {
+        const entries = await fs.readdir(dirPath, { withFileTypes: true });
+        const nodes = await Promise.all(entries.map(async (entry) => {
+            if (IGNORED_DIRS.has(entry.name)) return null;
+
+            const fullPath = path.join(dirPath, entry.name);
+            try {
+                const stats = await fs.stat(fullPath);
+                return {
+                    name: entry.name,
+                    path: fullPath,
+                    size: stats.isDirectory() ? 0 : stats.size, // Don't calc folder size here to be fast
+                    type: entry.isDirectory() ? 'directory' : 'file',
+                    extension: entry.isDirectory() ? '' : path.extname(entry.name).toLowerCase(),
+                    category: entry.isDirectory() ? 'Folder' : getCategory(path.extname(entry.name).toLowerCase()),
+                    modified: stats.mtime,
+                    children: [] // No recursion
+                } as FileNode;
+            } catch {
+                return null;
+            }
+        }));
+
+        return nodes.filter(Boolean) as FileNode[];
+    } catch (error) {
+        return [];
+    }
+}

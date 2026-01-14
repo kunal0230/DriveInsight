@@ -31,6 +31,8 @@ interface ScanResult {
 
 interface ElectronAPI {
     scanDirectory: (path: string) => Promise<ScanResult>;
+    getCommonDirectories: () => Promise<FileNode[]>;
+    listDirectory: (path: string) => Promise<FileNode[]>;
     ipcRenderer: {
         on(channel: string, func: (...args: any[]) => void): void;
     };

@@ -2,7 +2,7 @@ import { app, BrowserWindow } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { ipcMain } from 'electron'
-import { scanDirectory } from './scanner'
+import { scanDirectory, getCommonDirectories, listDirectory } from './scanner'
 
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -71,6 +71,14 @@ app.whenReady().then(() => {
 
   ipcMain.handle('scan-directory', async (_, path) => {
     return await scanDirectory(path)
+  })
+
+  ipcMain.handle('get-common-directories', async () => {
+    return await getCommonDirectories()
+  })
+
+  ipcMain.handle('list-directory', async (_, path) => {
+    return await listDirectory(path)
   })
 })
 

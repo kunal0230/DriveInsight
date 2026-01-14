@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import './App.css'
-import { FileTreemap } from './components/FileTreemap';
+import { FolderBarChart } from './components/FolderBarChart';
+import { FileTree } from './components/FileTree';
+import { DirectoryPicker } from './components/DirectoryPicker';
 import { CategoryChart } from './components/CategoryChart';
 import { LargestFilesList } from './components/LargestFilesList';
-import { LayoutDashboard, FolderSearch, HardDrive, PieChart as PieChartIcon, Search, AlertCircle, Sparkles } from 'lucide-react';
+import { LayoutDashboard, FolderSearch, HardDrive, PieChart as PieChartIcon, AlertCircle, Sparkles } from 'lucide-react';
 import { cn } from './lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -13,6 +15,7 @@ function App() {
   const [scanResult, setScanResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   const handleScan = async () => {
     setLoading(true);
@@ -81,13 +84,16 @@ function App() {
         {/* Header */}
         <header className="h-20 border-b border-slate-800/50 flex items-center px-8 bg-[#0f1115]/80 backdrop-blur-md z-10 justify-between">
           <div className="flex gap-4 w-full max-w-xl items-center relative">
-            <Search size={18} className="absolute left-4 text-slate-500" />
+            <div className="absolute left-4 text-slate-500 cursor-pointer hover:text-white transition-colors" onClick={() => setIsPickerOpen(true)}>
+              <FolderSearch size={18} />
+            </div>
             <input
               type="text"
               value={pathInput}
               onChange={(e) => setPathInput(e.target.value)}
               className="w-full bg-slate-900/50 border border-slate-700/50 rounded-full pl-12 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 outline-none text-slate-200 placeholder-slate-600 transition-all font-medium"
-              placeholder="Scanner Path..."
+              placeholder="Select directory to analyze..."
+              onClick={() => setIsPickerOpen(true)}
             />
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -142,7 +148,7 @@ function App() {
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.4 }}
-                className="space-y-6 max-w-7xl mx-auto"
+                className="space-y-6 w-full h-full"
               >
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -178,7 +184,7 @@ function App() {
                 {/* Main Viz */}
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                   <div className="xl:col-span-2 space-y-6">
-                    <FileTreemap data={scanResult.root} />
+                    <FolderBarChart data={scanResult.root} />
                     <LargestFilesList files={scanResult.stats.largestFiles} />
                   </div>
                   <div className="space-y-6">
@@ -201,17 +207,20 @@ function App() {
           </AnimatePresence>
 
           {scanResult && activeTab === 'explorer' && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-1">
-              <div className="bg-[#161b22] border border-slate-800 rounded-xl overflow-hidden">
-                <div className="p-4 border-b border-slate-800 bg-slate-900/30">
-                  <h3 className="font-semibold text-slate-300">Raw File Tree</h3>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex flex-col">
+              <div className="bg-[#161b22]/60 backdrop-blur-md border border-slate-800/60 rounded-2xl overflow-hidden shadow-xl flex-1 flex flex-col">
+                <div className="p-4 border-b border-slate-800/60 bg-slate-900/30 flex items-center justify-between">
+                  <h3 className="font-semibold text-slate-300 flex items-center gap-2">
+                    <FolderSearch size={18} className="text-blue-400" />
+                    File Explorer
+                  </h3>
+                  <span className="text-xs text-slate-500 font-mono">
+                    {scanResult.stats.fileCount.toLocaleString()} items
+                  </span>
                 </div>
-                <pre className="p-4 text-xs text-slate-400 font-mono overflow-auto max-h-[75vh]">
-                  {JSON.stringify(scanResult.root, (key, value) => {
-                    if (key === 'children' && value.length > 50) return `[${value.length} items]`;
-                    return value;
-                  }, 2)}
-                </pre>
+                <div className="p-2 overflow-auto flex-1 custom-scrollbar">
+                  <FileTree root={scanResult.root} />
+                </div>
               </div>
             </motion.div>
           )}
@@ -222,6 +231,15 @@ function App() {
             </motion.div>
           )}
         </main>
+
+        <DirectoryPicker
+          isOpen={isPickerOpen}
+          onClose={() => setIsPickerOpen(false)}
+          onSelect={(path) => {
+            setPathInput(path);
+            setIsPickerOpen(false);
+          }}
+        />
       </div>
     </div>
   )
