@@ -72,11 +72,29 @@ interface ScanContext {
     largestFiles: FileStat[];
 }
 
-async function recursiveScan(dirPath: string, context: ScanContext, depth: number): Promise<FileNode | null> {
+// Helper to throttle progress updates
+const UPDATE_INTERVAL_MS = 100;
+
+async function recursiveScan(
+    dirPath: string,
+    context: ScanContext,
+    depth: number,
+    onProgress?: (count: number, path: string) => void,
+    lastUpdate?: { time: number }
+): Promise<FileNode | null> {
     const stats = await safeStat(dirPath);
     if (!stats) return null;
 
     const name = path.basename(dirPath);
+
+    // Throttle progress updates
+    if (onProgress && lastUpdate) {
+        const now = Date.now();
+        if (now - lastUpdate.time > UPDATE_INTERVAL_MS) {
+            onProgress(context.fileCount, dirPath);
+            lastUpdate.time = now;
+        }
+    }
 
     if (!stats.isDirectory()) {
         const ext = path.extname(name).toLowerCase();
@@ -86,12 +104,7 @@ async function recursiveScan(dirPath: string, context: ScanContext, depth: numbe
         context.fileCount++;
         context.categoryBreakdown[category] = (context.categoryBreakdown[category] || 0) + stats.size;
 
-        // Track large files - simplified logic: just push all > 10MB then sort/slice later? 
-        // Or maintenance of a small list. Let's just push everything interesting (>50MB) and sort at the end? 
-        // No, that melts memory.
-        // Let's keep a simple check: if larger than smallest in list (or list not full), add.
-
-        if (stats.size > 10 * 1024 * 1024) { // Only track > 10MB to save memory initially
+        if (stats.size > 10 * 1024 * 1024) {
             context.largestFiles.push({
                 name,
                 path: dirPath,
@@ -113,12 +126,7 @@ async function recursiveScan(dirPath: string, context: ScanContext, depth: numbe
     }
 
     // Directory
-    // Prune recursion at extreme depth to prevent stack overflow/hangs
     if (depth > 20) return null;
-
-    // Special handling for .app bundles on macOS - treat as files? 
-    // Usually users see them as apps. But they are directories. 
-    // For now, scan them.
 
     const node: FileNode = {
         name,
@@ -131,25 +139,13 @@ async function recursiveScan(dirPath: string, context: ScanContext, depth: numbe
     try {
         const entries = await fs.readdir(dirPath, { withFileTypes: true });
 
-        // Process sequentially in chunks to be nicer to event loop? Or parallel?
-        // Parallel is faster but uses more memory. JSON.stringify at the end kills it.
-        // Let's stick to Promise.all but limit concurrency if needed. 
-        // For now, Promise.all is okay for typical SSDs.
-
         const childrenPromises = entries.map(async (entry) => {
             if (IGNORED_DIRS.has(entry.name)) return null;
-            // if (entry.name.startsWith('.')) return null; // Ignore hidden files? Maybe option.
-
             const fullPath = path.join(dirPath, entry.name);
-            return await recursiveScan(fullPath, context, depth + 1);
+            return await recursiveScan(fullPath, context, depth + 1, onProgress, lastUpdate);
         });
 
         const children = (await Promise.all(childrenPromises)).filter(Boolean) as FileNode[];
-
-        // Optimization: Don't store children for huge arrays if they are small files?
-        // Actually, for Recharts Treemap, we need children. 
-        // But maybe we can drop children that are extremely small (e.g. < 0.1% of parent size)?
-        // For now, keep all.
 
         node.children = children;
         node.size = children.reduce((acc, child) => acc + child.size, 0);
@@ -161,14 +157,17 @@ async function recursiveScan(dirPath: string, context: ScanContext, depth: numbe
     return node;
 }
 
-export async function scanDirectory(dirPath: string): Promise<ScanResult | null> {
+export async function scanDirectory(
+    dirPath: string,
+    onProgress?: (count: number, currentPath: string) => void
+): Promise<ScanResult | null> {
     const context: ScanContext = {
         fileCount: 0,
         categoryBreakdown: {},
         largestFiles: []
     };
 
-    const rootNode = await recursiveScan(dirPath, context, 0);
+    const rootNode = await recursiveScan(dirPath, context, 0, onProgress, { time: 0 });
 
     if (!rootNode) return null;
 

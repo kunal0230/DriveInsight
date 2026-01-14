@@ -16,10 +16,18 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [scanProgress, setScanProgress] = useState<{ count: number, path: string } | null>(null);
 
   const handleScan = async () => {
     setLoading(true);
     setError(null);
+    setScanProgress(null);
+
+    // Listen for progress
+    (window as any).electron.ipcRenderer.on('scan-progress', (data: any) => {
+      setScanProgress(data);
+    });
+
     try {
       const result = await (window as any).electron.scanDirectory(pathInput);
       if (!result) throw new Error("Result is empty. Ensure path exists.");
@@ -28,7 +36,10 @@ function App() {
       console.error(error);
       setError(error.message || 'Failed to scan directory.');
     } finally {
+      // Cleanup listener
+      (window as any).electron.ipcRenderer.removeAllListeners('scan-progress');
       setLoading(false);
+      setScanProgress(null);
     }
   };
 
@@ -138,8 +149,23 @@ function App() {
                   <div className="absolute inset-0 border-4 border-slate-800 rounded-full"></div>
                   <div className="absolute inset-0 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
                 </div>
-                <p className="text-slate-400 font-medium">Scanning filesystem...</p>
-                <p className="text-slate-600 text-sm mt-2">Gathering intelligence on file structures</p>
+                <p className="text-slate-400 font-medium text-lg">Scanning filesystem...</p>
+                <div className="w-64 h-1.5 bg-slate-800 rounded-full mt-4 overflow-hidden relative">
+                  <motion.div
+                    className="h-full bg-blue-500 absolute left-0 top-0"
+                    initial={{ width: "0%" }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }} // Indeterminate for now, or use real progress if we known total files (we don't)
+                  />
+                </div>
+                <p className="text-slate-500 text-xs mt-3 font-mono">
+                  {scanProgress ? `Analyzing: ${scanProgress.count} files` : 'Gathering intelligence...'}
+                </p>
+                {scanProgress && (
+                  <p className="text-slate-600 text-[10px] mt-1 max-w-md truncate px-4 opacity-50">
+                    {scanProgress.path}
+                  </p>
+                )}
               </motion.div>
             )}
 

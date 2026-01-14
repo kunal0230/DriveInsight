@@ -44,6 +44,15 @@ export function LargestFilesList({ files }: { files: any[] }) {
                                         </div>
                                     </div>
                                 </td>
+                                <td className="px-4 py-3 text-right">
+                                    <button
+                                        onClick={() => (window as any).electron.openPath(file.path)}
+                                        className="p-1.5 text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 rounded-md transition-colors"
+                                        title="Reveal in Finder"
+                                    >
+                                        <Box size={14} />
+                                    </button>
+                                </td>
                                 <td className="px-4 py-3 text-slate-400 whitespace-nowrap">
                                     {new Date(file.modified).toLocaleDateString()}
                                 </td>
@@ -55,6 +64,6 @@ export function LargestFilesList({ files }: { files: any[] }) {
                     </tbody>
                 </table>
             </div>
-        </div>
+        </div >
     );
 }

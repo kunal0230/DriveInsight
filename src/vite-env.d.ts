@@ -33,8 +33,10 @@ interface ElectronAPI {
     scanDirectory: (path: string) => Promise<ScanResult>;
     getCommonDirectories: () => Promise<FileNode[]>;
     listDirectory: (path: string) => Promise<FileNode[]>;
+    openPath: (path: string) => Promise<void>;
     ipcRenderer: {
         on(channel: string, func: (...args: any[]) => void): void;
+        removeAllListeners(channel: string): void;
     };
 }
 

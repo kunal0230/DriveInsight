@@ -2,6 +2,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 
 interface FileNode {
     name: string;
+    path: string;
     size: number;
     children?: FileNode[];
 }
@@ -30,7 +31,8 @@ export function FolderBarChart({ data }: { data: FileNode }) {
         .slice(0, 10)
         .map(item => ({
             name: item.name,
-            size: item.size
+            size: item.size,
+            path: item.path
         }));
 
     return (
@@ -53,9 +55,20 @@ export function FolderBarChart({ data }: { data: FileNode }) {
                             tickLine={false}
                         />
                         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
-                        <Bar dataKey="size" radius={[0, 4, 4, 0]} barSize={20} background={{ fill: '#1e293b', radius: [0, 4, 4, 0] } as any}>
+                        <Bar
+                            dataKey="size"
+                            radius={[0, 4, 4, 0]}
+                            barSize={20}
+                            background={{ fill: '#1e293b', radius: [0, 4, 4, 0] } as any}
+                            onClick={(data) => {
+                                if (data && data.path) {
+                                    (window as any).electron.openPath(data.path);
+                                }
+                            }}
+                            className="cursor-pointer"
+                        >
                             {chartData.map((_, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="hover:opacity-80 transition-opacity" />
                             ))}
                         </Bar>
                     </BarChart>

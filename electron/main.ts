@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, shell } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { ipcMain } from 'electron'
@@ -69,8 +69,10 @@ app.on('activate', () => {
 app.whenReady().then(() => {
   createWindow()
 
-  ipcMain.handle('scan-directory', async (_, path) => {
-    return await scanDirectory(path)
+  ipcMain.handle('scan-directory', async (event, path) => {
+    return await scanDirectory(path, (count, currentPath) => {
+      event.sender.send('scan-progress', { count, path: currentPath });
+    })
   })
 
   ipcMain.handle('get-common-directories', async () => {
@@ -79,6 +81,10 @@ app.whenReady().then(() => {
 
   ipcMain.handle('list-directory', async (_, path) => {
     return await listDirectory(path)
+  })
+
+  ipcMain.handle('open-path', async (_, path) => {
+    await shell.showItemInFolder(path)
   })
 })
 
