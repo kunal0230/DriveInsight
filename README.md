@@ -6,13 +6,13 @@
 
 ## Features
 
-* **🛡 Robust Scanner**: Recursively scans directories with fault tolerance for system permission errors (EACCES/EPERM).
-* **📊 Interactive Visualization**: Explore your storage with an interactive Treemap and Category Distribution charts.
-* **💎 Premium UI**: A modern, dark-mode dashboard featuring glassmorphism, smooth animations (Framer Motion), and sidebar navigation.
-* **🔍 Smart Insights**:
+* ** Robust Scanner**: Recursively scans directories with fault tolerance for system permission errors (EACCES/EPERM).
+* ** Interactive Visualization**: Explore your storage with an interactive Treemap and Category Distribution charts.
+* ** Premium UI**: A modern, dark-mode dashboard featuring glassmorphism, smooth animations (Framer Motion), and sidebar navigation.
+* ** Smart Insights**:
   * **Largest Files**: Instantly identify the top 50 largest files consuming your space.
   * **Category Breakdown**: See storage usage by type (Video, Image, Code, Documents, etc.).
-* **⚡️ Performance**: Optimized for large file systems with depth-aware scanning and aggregated statistics.
+* ** Performance**: Optimized for large file systems with depth-aware scanning and aggregated statistics.
 
 ## Tech Stack
 
@@ -62,3 +62,4 @@ The output will be in the `release/` directory.
 ## License
 
 MIT
+
